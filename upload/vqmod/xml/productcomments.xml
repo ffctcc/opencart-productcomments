@@ -1,0 +1,89 @@
+<?xml version="1.0" ?>
+<!DOCTYPE modification [
+<!ENTITY adminFolder "admin">
+<!ENTITY themeFolder "default">
+]>
+<modification>
+	<id>FreeProductComments</id>
+	<version>3.1</version>
+	<author>http://ffct.cc</author>
+	<file name="catalog/view/theme/&themeFolder;/template/product/product.tpl">
+		<operation>
+			<search position="after"><![CDATA[
+				<div id="tabs" class="htabs"><a href="#tab-description"><?php echo $tab_description; ?></a>
+			]]></search>
+			<add><![CDATA[
+  				<a href="#tab-comments"><?php echo $tab_comments ?></a>
+			]]></add>
+		</operation>
+		
+		<operation>
+			<search position="before"><![CDATA[
+				<?php if ($tags) { ?>
+			]]></search>
+			<add><![CDATA[
+  				<div id="tab-comments" class="tab-content">
+  					<div class="pcComments"></div>
+  					<div class="pcForm"></div>
+  				</div>
+			]]></add>
+		</operation>
+		
+		<operation>
+			<search position="before"><![CDATA[
+				$('#button-review').bind('click', function() {
+			]]></search>
+			<add><![CDATA[
+  				$('#tab-comments .pcForm').load('index.php?route=module/productcomments/renderForm&product_id=<?php echo $product_id; ?>');
+  				$('#tab-comments .pcComments').load('index.php?route=module/productcomments/renderComments&product_id=<?php echo $product_id; ?>');
+			]]></add>
+		</operation>	
+	</file>
+	
+	<file name="catalog/controller/product/product.php">
+		<operation>
+			<search position="before"><![CDATA[
+			    $this->data['tab_related'] = $this->language->get('tab_related');
+			]]></search>
+			<add><![CDATA[
+				$this->load->model('module/productcomments');
+				$this->language->load('module/productcomments');
+				$this->data['tab_comments'] = sprintf($this->language->get('tab_comments'), $this->model_module_productcomments->getTotalComments(array(
+					'product_id' => $this->request->get['product_id'],
+					'displayed' => 1
+				)));
+				
+				$this->document->addScript('catalog/view/javascript/productcomments.js');
+				if (file_exists('catalog/view/theme/' . $this->config->get('config_template') . '/stylesheet/productcomments.css')) {
+					$this->document->addStyle('catalog/view/theme/' . $this->config->get('config_template') . '/stylesheet/productcomments.css');
+				} else {
+					$this->document->addStyle('catalog/view/theme/default/stylesheet/productcomments.css');
+				}
+			]]></add>
+		</operation>
+	</file>
+	
+	<file name="&adminFolder;/controller/common/header.php">
+		<operation error="skip">
+			<search position="before" offset="2"><![CDATA[
+			    $this->template = 'common/header.tpl';
+			]]></search>
+			<add><![CDATA[
+				$this->language->load('module/productcomments');
+				$this->data['pc_comments'] = $this->language->get('pc_comments');
+				$this->data['pc_link_comments'] = $this->url->link('module/productcomments', 'token=' . $this->session->data['token'], 'SSL');
+			]]></add>
+		</operation>
+	</file>
+	
+	<file name="&adminFolder;/view/template/common/header.tpl">
+		<operation error="skip">>
+			<search position="after"><![CDATA[
+			    <li><a href="<?php echo $information; ?>"><?php echo $text_information; ?></a></li>
+			]]></search>
+			<add><![CDATA[
+				<li><a href="<?php echo $pc_link_comments; ?>"><?php echo $pc_comments; ?></a></li>
+			]]></add>
+		</operation>
+	</file>
+</modification>
